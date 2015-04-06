@@ -6,7 +6,8 @@ module Koudoku
     before_filter :load_plans, only: [:index, :edit]
 
     def load_plans
-      @plans = ::Plan.order(:price)
+      @plans = ::Plan.order(:display_order)
+      #puts @plans.inspect
     end
 
     def unauthorized
@@ -71,6 +72,8 @@ module Koudoku
 
       # don't bother showing the index if they've already got a subscription.
       if current_owner and current_owner.subscription.present?
+        puts current_owner.inspect
+        puts "redirect to edit_owner_subscription_path"
         redirect_to koudoku.edit_owner_subscription_path(current_owner, current_owner.subscription)
       end
 
@@ -115,10 +118,12 @@ module Koudoku
     end
 
     def create
+      puts "create"
       @subscription = ::Subscription.new(subscription_params)
+      puts "create2"
       @subscription.subscription_owner = @owner
       @subscription.coupon_code = session[:koudoku_coupon_code]
-      
+      puts "create3"
       if @subscription.save
         flash[:notice] = after_new_subscription_message
         redirect_to after_new_subscription_path 
@@ -139,6 +144,19 @@ module Koudoku
     end
 
     def edit
+      if @subscription.plan
+        @plans = @plans.reject { | newplan|
+          not newplan.is_upgrade_from?(@subscription.plan)
+        }
+      end
+      # do | newplan |
+      #  false
+
+        #if (newplan.is_upgrade_from?(@subscription.plan))
+        #  true
+        #end
+      #end
+
     end
 
     def update

@@ -13,14 +13,16 @@ module Koudoku::Subscription
     before_save :processing!
     def processing!
 
+      puts "credit card token: #{self.credit_card_token}"
+      puts "stripe_id: #{stripe_id}"
       # if their package level has changed ..
       if changing_plans?
-
+        puts "changing_plans"
         prepare_for_plan_change
 
         # and a customer exists in stripe ..
         if stripe_id.present?
-
+          puts "stripe_id present"
           # fetch the customer.
           customer = Stripe::Customer.retrieve(self.stripe_id)
 
@@ -41,7 +43,7 @@ module Koudoku::Subscription
 
           # if no plan has been selected.
           else
-
+            puts "cancellation"
             prepare_for_cancelation
 
             # Remove the current pricing.
@@ -58,13 +60,13 @@ module Koudoku::Subscription
         else
           # if a new plan has been selected
           if self.plan.present?
-
+            puts "new plan selected"
             # Record the new plan pricing.
             self.current_price = self.plan.price
 
             prepare_for_new_subscription
             prepare_for_upgrade
-
+            puts "prepared"
             begin
 
               customer_attributes = {
@@ -72,6 +74,8 @@ module Koudoku::Subscription
                 email: subscription_owner_email,
                 card: credit_card_token # obtained with Stripe.js
               }
+
+              puts "customer attributes: #{customer_attributes.inspect}"
 
               # If the class we're being included in supports coupons ..
               if respond_to? :coupon
@@ -86,8 +90,9 @@ module Koudoku::Subscription
               customer = Stripe::Customer.create(customer_attributes)
 
               finalize_new_customer!(customer.id, plan.price)
+              puts "finalized"
               customer.update_subscription(:plan => self.plan.stripe_id, :prorate => Koudoku.prorate)
-
+              puts "subscription stuff"
             rescue Stripe::CardError => card_error
               errors[:base] << card_error.message
               card_was_declined
@@ -104,7 +109,7 @@ module Koudoku::Subscription
           else
 
             # This should never happen.
-
+            puts "this should never happen"
             self.plan_id = nil
 
             # Remove any plan pricing.
@@ -118,16 +123,17 @@ module Koudoku::Subscription
 
       # if they're updating their credit card details.
       elsif self.credit_card_token.present?
-
+        puts "updating cc details"
         prepare_for_card_update
 
         # fetch the customer.
         customer = Stripe::Customer.retrieve(self.stripe_id)
         customer.card = self.credit_card_token
         customer.save
-
+        puts "customer card saved"
         # update the last four based on this new card.
         self.last_four = customer.cards.retrieve(customer.default_card).last4
+        puts "updated last four #{self.last_four}"
         finalize_card_update!
 
       end
