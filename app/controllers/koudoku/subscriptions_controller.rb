@@ -118,12 +118,12 @@ module Koudoku
     end
 
     def create
-      puts "create"
+      #puts "create"
       @subscription = ::Subscription.new(subscription_params)
-      puts "create2"
+      #puts "create2"
       @subscription.subscription_owner = @owner
       @subscription.coupon_code = session[:koudoku_coupon_code]
-      puts "create3"
+      #puts "create3"
       if @subscription.save
         flash[:notice] = after_new_subscription_message
         redirect_to after_new_subscription_path 

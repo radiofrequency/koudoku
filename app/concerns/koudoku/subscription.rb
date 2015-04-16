@@ -103,7 +103,9 @@ module Koudoku::Subscription
             self.stripe_id = customer.id
             self.last_four = customer.cards.retrieve(customer.default_card).last4
 
+            puts "calling finalize new subscription"
             finalize_new_subscription!
+            puts "calling finalize upgrade"
             finalize_upgrade!
 
           else
