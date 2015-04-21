@@ -29,7 +29,16 @@ StripeEvent.configure do |events|
     stripe_id = event.data.object['customer']
     subscription = ::Subscription.find_by_stripe_id(stripe_id)
     if subscription
-      subscription.subscription_owner.try(:cancel)
+      subscription.plan_id = nil
+      subscription.save
+      subscription.finalize_cancelation!
     end
+
+    # flash[:notice] = "You've successfully cancelled your subscription."
+    #  @subscription.plan_id = nil
+    #  @subscription.save
+    #if subscription
+    #  subscription.subscription_owner.try(:cancel)
+    #end
   end
 end
